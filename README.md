@@ -2,11 +2,11 @@
 
 ## 🏆 Le Meilleur Jeu de Tous les Temps 🏆
 
-![Goaty Awards 2021](https://i.imgur.com/placeholder1.png)
-![Goaty Awards 2022](https://i.imgur.com/placeholder2.png)
-![Goaty Awards 2023](https://i.imgur.com/placeholder3.png)
-![Goaty Awards 2024](https://i.imgur.com/placeholder4.png)
-![Goaty Awards 2025](https://i.imgur.com/placeholder5.png)
+![Goaty Awards 2021](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/The_Game_Awards_Logo_2024.svg/1200px-The_Game_Awards_Logo_2024.svg.png)
+![Goaty Awards 2022](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/The_Game_Awards_Logo_2024.svg/1200px-The_Game_Awards_Logo_2024.svg.png)
+![Goaty Awards 2023](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/The_Game_Awards_Logo_2024.svg/1200px-The_Game_Awards_Logo_2024.svg.png)
+![Goaty Awards 2024](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/The_Game_Awards_Logo_2024.svg/1200px-The_Game_Awards_Logo_2024.svg.png)
+![Goaty Awards 2025](https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/The_Game_Awards_Logo_2024.svg/1200px-The_Game_Awards_Logo_2024.svg.png)
 
 *Élu "Meilleur Jeu de l'Année" par les Goaty Awards pendant 5 années consécutives !*
 

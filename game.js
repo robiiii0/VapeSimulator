@@ -26,6 +26,26 @@ let walkAnimation; // Pour l'animation de marche
 let vapeMenu;
 let currentVapeModel = 'elf_bar_lost_mary_vape.glb';
 let currentSmokeColor = new THREE.Color(0xffffff); // Couleur par défaut
+let phone;
+let musicPlayer;
+let currentAudio = null;
+let isPlaying = false;
+let musicIndicator;
+let timecodeElement;
+let timecodeUpdateInterval;
+let motorcycle = null;
+let isOnMotorcycle = false;
+let motorcycleSpeed = 0.2;
+let motorcycleRotationSpeed = 0.05;
+let interactionBubble;
+let isNearMotorcycle = false;
+const INTERACTION_DISTANCE = 3;
+let accelerationSound;
+let rollingSound;
+let isAccelerating = false;
+let lastAccelerationTime = 0;
+const ACCELERATION_COOLDOWN = 2000; // 2 secondes de cooldown
+let motorcycleAnimation; // Pour l'animation sur la moto
 
 // Variables pour la caméra
 let cameraDistance = 5;
@@ -127,6 +147,40 @@ function init() {
 
     // Configurer le menu de vape
     setupVapeMenu();
+
+    // Configurer le téléphone
+    setupPhone();
+    
+    // Initialiser l'indicateur de musique
+    musicIndicator = document.getElementById('musicIndicator');
+    timecodeElement = document.querySelector('.timecode');
+    
+    // Ajouter l'événement pour le bouton play/pause de l'indicateur
+    const miniPlayPause = document.querySelector('.mini-play-pause');
+    miniPlayPause.addEventListener('click', (e) => {
+        e.stopPropagation(); // Empêcher la propagation du clic
+        togglePlayPause();
+        updateMiniPlayPauseButton();
+    });
+
+    // Initialiser la bulle d'interaction
+    interactionBubble = document.getElementById('interactionBubble');
+    
+    // Charger la moto
+    loadMotorcycle();
+
+    // Initialiser les sons de la moto
+    accelerationSound = new Audio('acceleration.MP3');
+    rollingSound = new Audio('rienpourlinstantcarlesonroulerestdegeu');
+    rollingSound.loop = true;
+    
+    // Ajouter l'événement pour détecter la fin du son d'accélération
+    accelerationSound.addEventListener('ended', () => {
+        if (isAccelerating) {
+            rollingSound.currentTime = 0;
+            rollingSound.play();
+        }
+    });
 }
 
 // Gestion du redimensionnement de la fenêtre
@@ -169,6 +223,11 @@ function updateCamera() {
 // Gestion des mouvements
 function handleMovement() {
     if (!player) return;
+
+    if (isOnMotorcycle) {
+        handleMotorcycleMovement();
+        return;
+    }
 
     const moveDirection = new THREE.Vector3();
     let isMoving = false;
@@ -680,6 +739,26 @@ function handleKeys() {
         toggleVapeMenu();
         keys['e'] = false;
     }
+    if (keys['arrowup']) {
+        togglePhone();
+        keys['arrowup'] = false;
+    }
+    if (keys['arrowdown']) {
+        if (!phone.classList.contains('hidden')) {
+            togglePhone();
+        }
+        keys['arrowdown'] = false;
+    }
+    if (keys['m']) {
+        toggleMotorcycle();
+        keys['m'] = false;
+    }
+    if (keys['r']) {
+        if (isNearMotorcycle) {
+            toggleMotorcycle();
+        }
+        keys['r'] = false;
+    }
 }
 
 // Gestion de la molette de la souris
@@ -742,6 +821,338 @@ function toggleVapeMenu() {
     }
 }
 
+// Gestion du téléphone
+function setupPhone() {
+    phone = document.getElementById('phone');
+    musicPlayer = document.getElementById('musicPlayer');
+    const musicApp = document.querySelector('.music-app');
+    const backButton = document.querySelector('.back-button');
+    const playButtons = document.querySelectorAll('.play-button');
+    const playPauseButton = document.querySelector('.play-pause');
+    const prevButton = document.querySelector('.control-button:nth-child(1)');
+    const nextButton = document.querySelector('.control-button:nth-child(3)');
+
+    // Ouvrir l'app de musique
+    musicApp.addEventListener('click', () => {
+        musicPlayer.classList.remove('hidden');
+    });
+
+    // Retour à l'écran d'accueil
+    backButton.addEventListener('click', () => {
+        musicPlayer.classList.add('hidden');
+    });
+
+    // Jouer une chanson spécifique
+    playButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+            const songItem = e.target.closest('.music-item');
+            const songPath = songItem.dataset.song;
+            playSong(songPath);
+        });
+    });
+
+    // Contrôles de lecture
+    playPauseButton.addEventListener('click', togglePlayPause);
+    prevButton.addEventListener('click', playPreviousSong);
+    nextButton.addEventListener('click', playNextSong);
+}
+
+// Afficher/Masquer le téléphone
+function togglePhone() {
+    phone.classList.toggle('hidden');
+    if (phone.classList.contains('hidden')) {
+        // Ne plus arrêter la musique quand le téléphone est fermé
+        // On garde juste l'indicateur de musique visible
+        if (currentAudio && isPlaying) {
+            musicIndicator.classList.add('visible');
+        }
+    }
+}
+
+// Jouer une chanson
+function playSong(songPath) {
+    if (currentAudio) {
+        currentAudio.pause();
+        clearInterval(timecodeUpdateInterval);
+    }
+    currentAudio = new Audio(songPath);
+    currentAudio.play();
+    isPlaying = true;
+    updatePlayPauseButton();
+    
+    // Afficher l'indicateur de musique
+    musicIndicator.classList.add('visible');
+    
+    // Mettre à jour le timecode toutes les secondes
+    timecodeUpdateInterval = setInterval(updateTimecode, 1000);
+    
+    // Mettre à jour le timecode immédiatement
+    updateTimecode();
+}
+
+// Mettre en pause/Reprendre la lecture
+function togglePlayPause() {
+    if (currentAudio) {
+        if (isPlaying) {
+            currentAudio.pause();
+            clearInterval(timecodeUpdateInterval);
+        } else {
+            currentAudio.play();
+            timecodeUpdateInterval = setInterval(updateTimecode, 1000);
+        }
+        isPlaying = !isPlaying;
+        updatePlayPauseButton();
+        updateMiniPlayPauseButton();
+    }
+}
+
+// Jouer la chanson précédente
+function playPreviousSong() {
+    const currentSong = document.querySelector('.music-item.playing');
+    if (currentSong) {
+        const prevSong = currentSong.previousElementSibling;
+        if (prevSong) {
+            const songPath = prevSong.dataset.song;
+            playSong(songPath);
+            updatePlayingSong(prevSong);
+        }
+    }
+}
+
+// Jouer la chanson suivante
+function playNextSong() {
+    const currentSong = document.querySelector('.music-item.playing');
+    if (currentSong) {
+        const nextSong = currentSong.nextElementSibling;
+        if (nextSong) {
+            const songPath = nextSong.dataset.song;
+            playSong(songPath);
+            updatePlayingSong(nextSong);
+        }
+    }
+}
+
+// Mettre à jour le bouton play/pause
+function updatePlayPauseButton() {
+    const playPauseButton = document.querySelector('.play-pause');
+    playPauseButton.textContent = isPlaying ? '⏸' : '▶';
+}
+
+// Mettre à jour la chanson en cours de lecture
+function updatePlayingSong(songElement) {
+    document.querySelectorAll('.music-item').forEach(item => {
+        item.classList.remove('playing');
+    });
+    songElement.classList.add('playing');
+}
+
+// Mettre à jour le timecode
+function updateTimecode() {
+    if (currentAudio) {
+        const currentTime = Math.floor(currentAudio.currentTime);
+        const minutes = Math.floor(currentTime / 60);
+        const seconds = currentTime % 60;
+        timecodeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Mettre à jour le bouton play/pause de l'indicateur
+function updateMiniPlayPauseButton() {
+    const miniPlayPause = document.querySelector('.mini-play-pause');
+    miniPlayPause.textContent = isPlaying ? '⏸' : '▶';
+}
+
+// Chargement du modèle de moto
+function loadMotorcycle() {
+    const loader = new THREE.GLTFLoader(loadingManager);
+    
+    loader.load(
+        'ktm_450_exc.glb',
+        function (gltf) {
+            console.log('Moto chargée avec succès');
+            motorcycle = gltf.scene;
+            motorcycle.scale.set(1, 1, 1);
+            motorcycle.position.set(5, 0, 5);
+            motorcycle.rotation.y = Math.PI;
+            motorcycle.castShadow = true;
+            scene.add(motorcycle);
+        },
+        function (xhr) {
+            console.log((xhr.loaded / xhr.total * 100) + '% chargé');
+        },
+        function (error) {
+            console.error('Erreur lors du chargement de la moto:', error);
+        }
+    );
+}
+
+// Monter/Descendre de la moto
+function toggleMotorcycle() {
+    if (!motorcycle) return;
+    
+    if (!isOnMotorcycle) {
+        // Monter sur la moto
+        const motorcyclePosition = motorcycle.position.clone();
+        player.position.copy(motorcyclePosition);
+        player.position.y += 0.5;
+        player.position.z += 0.2;
+        player.rotation.y = motorcycle.rotation.y;
+        player.rotation.x = -0.2;
+        isOnMotorcycle = true;
+        interactionBubble.classList.remove('visible');
+
+        // Créer et jouer l'animation de position moto
+        createMotorcycleAnimation();
+        if (motorcycleAnimation) {
+            motorcycleAnimation.play();
+        }
+    } else {
+        // Descendre de la moto
+        const offset = new THREE.Vector3(2, 0, 0);
+        offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
+        player.position.copy(motorcycle.position).add(offset);
+        player.rotation.x = 0;
+        isOnMotorcycle = false;
+        
+        // Arrêter l'animation moto et revenir à l'animation idle
+        if (motorcycleAnimation) {
+            motorcycleAnimation.stop();
+        }
+        if (idleAnimation) {
+            idleAnimation.play();
+        }
+        
+        // Arrêter les sons
+        accelerationSound.pause();
+        rollingSound.pause();
+        isAccelerating = false;
+    }
+}
+
+// Créer l'animation pour la position moto
+function createMotorcycleAnimation() {
+    if (!leftLeg || !rightLeg || !rightArm || !rightForearm) return;
+
+    const duration = 0.5; // Durée de l'animation en secondes
+    const tracks = [];
+
+    // Animation pour la jambe gauche (plier)
+    const leftLegTrack = new THREE.KeyframeTrack(
+        leftLeg.uuid + '.rotation[x]',
+        [0, duration],
+        [0, Math.PI/2] // Plier la jambe à 90 degrés
+    );
+    tracks.push(leftLegTrack);
+
+    // Animation pour la jambe droite (plier)
+    const rightLegTrack = new THREE.KeyframeTrack(
+        rightLeg.uuid + '.rotation[x]',
+        [0, duration],
+        [0, Math.PI/2] // Plier la jambe à 90 degrés
+    );
+    tracks.push(rightLegTrack);
+
+    // Animation pour le bras droit (position guidon)
+    const rightArmTrack = new THREE.KeyframeTrack(
+        rightArm.uuid + '.rotation[x]',
+        [0, duration],
+        [0, -Math.PI/4] // Baisser le bras
+    );
+    tracks.push(rightArmTrack);
+
+    // Animation pour l'avant-bras droit (position guidon)
+    const rightForearmTrack = new THREE.KeyframeTrack(
+        rightForearm.uuid + '.rotation[x]',
+        [0, duration],
+        [0, -Math.PI/3] // Plier l'avant-bras
+    );
+    tracks.push(rightForearmTrack);
+
+    const clip = new THREE.AnimationClip('motorcycle', duration, tracks);
+    motorcycleAnimation = mixer.clipAction(clip);
+    motorcycleAnimation.setLoop(THREE.LoopOnce);
+    motorcycleAnimation.clampWhenFinished = true;
+}
+
+// Gestion des mouvements de la moto
+function handleMotorcycleMovement() {
+    if (!isOnMotorcycle || !motorcycle) return;
+
+    const currentTime = Date.now();
+    const isFirstAcceleration = currentTime - lastAccelerationTime > ACCELERATION_COOLDOWN;
+
+    if (keys['z'] || keys['arrowup']) {
+        // Avancer
+        const direction = new THREE.Vector3(0, 0, 1);
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
+        motorcycle.position.add(direction.multiplyScalar(motorcycleSpeed));
+        player.position.copy(motorcycle.position);
+        player.position.y += 0.5;
+        player.position.z += 0.2;
+        player.rotation.x = -0.2;
+
+        // Gestion des sons
+        if (!isAccelerating) {
+            if (isFirstAcceleration) {
+                accelerationSound.currentTime = 0;
+                accelerationSound.play();
+                lastAccelerationTime = currentTime;
+            } else if (rollingSound.paused) {
+                rollingSound.currentTime = 0;
+                rollingSound.play();
+            }
+            isAccelerating = true;
+        }
+    } else {
+        if (isAccelerating) {
+            rollingSound.pause();
+            isAccelerating = false;
+        }
+    }
+
+    if (keys['s'] || keys['arrowdown']) {
+        // Reculer
+        const direction = new THREE.Vector3(0, 0, -1);
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
+        motorcycle.position.add(direction.multiplyScalar(motorcycleSpeed));
+        player.position.copy(motorcycle.position);
+        // Maintenir la position assise pendant le mouvement
+        player.position.y += 0.5;
+        player.position.z += 0.2;
+        player.rotation.x = -0.2;
+    }
+    if (keys['q'] || keys['arrowleft']) {
+        // Tourner à gauche
+        motorcycle.rotation.y += motorcycleRotationSpeed;
+        player.rotation.y = motorcycle.rotation.y;
+    }
+    if (keys['d'] || keys['arrowright']) {
+        // Tourner à droite
+        motorcycle.rotation.y -= motorcycleRotationSpeed;
+        player.rotation.y = motorcycle.rotation.y;
+    }
+}
+
+// Vérifier la proximité avec la moto
+function checkMotorcycleProximity() {
+    if (!motorcycle || !player) return;
+    
+    const distance = player.position.distanceTo(motorcycle.position);
+    const wasNearMotorcycle = isNearMotorcycle;
+    isNearMotorcycle = distance < INTERACTION_DISTANCE;
+    
+    // Afficher/masquer la bulle d'interaction seulement si on n'est pas sur la moto
+    if (!isOnMotorcycle) {
+        if (isNearMotorcycle && !wasNearMotorcycle) {
+            interactionBubble.classList.add('visible');
+        } else if (!isNearMotorcycle && wasNearMotorcycle) {
+            interactionBubble.classList.remove('visible');
+        }
+    } else {
+        interactionBubble.classList.remove('visible');
+    }
+}
+
 // Boucle d'animation
 function animate() {
     requestAnimationFrame(animate);
@@ -755,6 +1166,7 @@ function animate() {
     updateCamera();
     updateSmoke();
     updateRingSmoke();
+    checkMotorcycleProximity(); // Vérifier la proximité avec la moto
     
     renderer.render(scene, camera);
 }

@@ -82,6 +82,242 @@
             font-size: 20px;
             cursor: pointer;
         }
+        #phone {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 300px;
+            height: 500px;
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        #phone.hidden {
+            transform: translateY(120%);
+        }
+        .phone-header {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .phone-apps {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+        .app {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .app-icon {
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        .app-name {
+            font-size: 12px;
+            color: #fff;
+        }
+        #musicPlayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 20px;
+        }
+        #musicPlayer.hidden {
+            display: none;
+        }
+        .music-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .music-list {
+            height: calc(100% - 150px);
+            overflow-y: auto;
+        }
+        .music-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #333;
+        }
+        .song-info {
+            flex: 1;
+        }
+        .song-title {
+            font-weight: bold;
+        }
+        .song-artist {
+            font-size: 12px;
+            color: #999;
+        }
+        .play-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .music-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        .control-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .control-button.play-pause {
+            width: 50px;
+            height: 50px;
+            border-radius: 25px;
+            background: #1DB954;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #musicIndicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        #musicIndicator.visible {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .music-icon {
+            font-size: 20px;
+            animation: bounce 1s infinite;
+            color: #1DB954;
+        }
+        
+        .timecode {
+            font-size: 14px;
+            font-family: monospace;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        
+        .mini-play-pause {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 15px;
+            transition: all 0.2s ease;
+        }
+        
+        .mini-play-pause:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        
+        #interactionBubble {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-family: Arial, sans-serif;
+            display: none;
+            z-index: 1000;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        
+        #interactionBubble.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+        
+        .key-hint {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+            margin-left: 5px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -105,6 +341,49 @@
         <div class="vapeOption" data-model="elf_bar_lost_mary_vape.glb">
             <span class="vapeName">Elf Bar Lost Mary</span>
         </div>
+    </div>
+
+    <div id="phone" class="hidden">
+        <div class="phone-header">
+            <div class="phone-time">12:00</div>
+            <div class="phone-battery">100%</div>
+        </div>
+        <div class="phone-apps">
+            <div class="app music-app">
+                <div class="app-icon">🎵</div>
+                <div class="app-name">Music</div>
+            </div>
+        </div>
+        <div id="musicPlayer" class="hidden">
+            <div class="music-header">
+                <button class="back-button">←</button>
+                <h3>Music Player</h3>
+            </div>
+            <div class="music-list">
+                <div class="music-item" data-song="GAMBINO - SALOU (Clip Officiel).mp3">
+                    <div class="song-info">
+                        <div class="song-title">SALOU</div>
+                        <div class="song-artist">GAMBINO</div>
+                    </div>
+                    <button class="play-button">▶</button>
+                </div>
+            </div>
+            <div class="music-controls">
+                <button class="control-button">⏮</button>
+                <button class="control-button play-pause">▶</button>
+                <button class="control-button">⏭</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="musicIndicator">
+        <span class="music-icon">🎵</span>
+        <span class="timecode">00:00</span>
+        <button class="mini-play-pause">⏸</button>
+    </div>
+
+    <div id="interactionBubble">
+        Appuyez sur <span class="key-hint">R</span> pour monter sur la moto
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

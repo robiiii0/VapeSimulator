@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu 3D Three.js</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: Arial, sans-serif;
+            z-index: 1000;
+        }
+        #loadingBar {
+            width: 300px;
+            height: 20px;
+            background-color: #333;
+            border-radius: 10px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        #loadingProgress {
+            width: 0%;
+            height: 100%;
+            background-color: #4CAF50;
+            transition: width 0.3s ease-in-out;
+        }
+        #loadingText {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        #vapeMenu {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: none;
+            width: 300px;
+        }
+        .vapeOption {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .vapeOption:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .vapeOption.selected {
+            background: rgba(76, 175, 80, 0.3);
+        }
+        .vapeName {
+            margin-left: 10px;
+        }
+        #closeMenu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">
+        <div id="loadingText">Chargement du jeu...</div>
+        <div id="loadingBar">
+            <div id="loadingProgress"></div>
+        </div>
+        <div id="loadingStatus">0%</div>
+    </div>
+
+    <div id="vapeMenu">
+        <button id="closeMenu">×</button>
+        <h2>Sélectionner une Puff</h2>
+        <div class="vapeOption" data-model="vape..glb">
+            <span class="vapeName">Vape 1</span>
+        </div>
+        <div class="vapeOption" data-model="vape_-_it (1).glb">
+            <span class="vapeName">Vape 2</span>
+        </div>
+        <div class="vapeOption" data-model="elf_bar_lost_mary_vape.glb">
+            <span class="vapeName">Elf Bar Lost Mary</span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="game.js"></script>
+</body>
+</html> 

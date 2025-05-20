@@ -1044,7 +1044,7 @@ function toggleMotorcycle() {
         const motorcyclePosition = motorcyclePivot.position.clone();
         player.position.copy(motorcyclePosition);
         player.rotation.y = motorcyclePivot.rotation.y;
-        player.rotation.x = 1.5;
+        player.rotation.x = -0.3; // Position normale assise
         isOnMotorcycle = true;
         interactionBubble.classList.remove('visible');
 
@@ -1058,11 +1058,12 @@ function toggleMotorcycle() {
         player.rotation.x = 0;
         isOnMotorcycle = false;
         
-        // Arrêter l'animation moto et revenir à l'animation idle
-        if (motorcycleAnimation) {
-            motorcycleAnimation.stop();
-            motorcycleAnimation.reset(); // Réinitialiser l'animation
+        // Arrêter toutes les animations moto
+        if (mixer) {
+            mixer.stopAllAction();
         }
+        
+        // Revenir à l'animation idle
         if (idleAnimation) {
             idleAnimation.play();
         }
@@ -1113,20 +1114,52 @@ function createMotorcycleAnimation() {
     );
     tracks.push(rightForearmTrack);
 
-    // Animation pour le torse (se pencher en avant)
-    const spineTrack = new THREE.KeyframeTrack(
-        'spine.rotation[x]',
-        [0, duration],
-        [0, -Math.PI/4] // Se pencher plus en avant
-    );
-    tracks.push(spineTrack);
-
     const clip = new THREE.AnimationClip('motorcycle', duration, tracks);
     motorcycleAnimation = mixer.clipAction(clip);
     motorcycleAnimation.setLoop(THREE.LoopOnce);
     motorcycleAnimation.clampWhenFinished = true;
     motorcycleAnimation.setEffectiveWeight(1); // Assure que l'animation a un poids total
     motorcycleAnimation.play();
+
+    // Créer une animation en boucle pour maintenir la position
+    const maintainTracks = [];
+    
+    // Maintenir les jambes pliées
+    const maintainLeftLegTrack = new THREE.KeyframeTrack(
+        leftLeg.uuid + '.rotation[x]',
+        [0, 1],
+        [Math.PI/1.2, Math.PI/1.2]
+    );
+    maintainTracks.push(maintainLeftLegTrack);
+
+    const maintainRightLegTrack = new THREE.KeyframeTrack(
+        rightLeg.uuid + '.rotation[x]',
+        [0, 1],
+        [Math.PI/1.2, Math.PI/1.2]
+    );
+    maintainTracks.push(maintainRightLegTrack);
+
+    // Maintenir la position des bras
+    const maintainRightArmTrack = new THREE.KeyframeTrack(
+        rightArm.uuid + '.rotation[x]',
+        [0, 1],
+        [-Math.PI/2.5, -Math.PI/2.5]
+    );
+    maintainTracks.push(maintainRightArmTrack);
+
+    const maintainRightForearmTrack = new THREE.KeyframeTrack(
+        rightForearm.uuid + '.rotation[x]',
+        [0, 1],
+        [-Math.PI/3, -Math.PI/3]
+    );
+    maintainTracks.push(maintainRightForearmTrack);
+
+    const maintainClip = new THREE.AnimationClip('maintainMotorcycle', 1, maintainTracks);
+    const maintainAction = mixer.clipAction(maintainClip);
+    maintainAction.setLoop(THREE.LoopRepeat);
+    maintainAction.setEffectiveWeight(1);
+    maintainAction.play();
+    console.log("player position :", player.position);
 }
 
 // Gestion des mouvements de la moto

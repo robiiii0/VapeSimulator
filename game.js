@@ -46,6 +46,13 @@ let isAccelerating = false;
 let lastAccelerationTime = 0;
 const ACCELERATION_COOLDOWN = 2000; // 2 secondes de cooldown
 let motorcycleAnimation; // Pour l'animation sur la moto
+let isWheelie = false;
+let wheelieSpeed = 0.02;
+let wheelieMaxAngle = Math.PI / 2; // 90 degrés
+let wheelieRecoverySpeed = 0.01;
+let minWheelieSpeed = 0.15;
+let isWheelieKeyPressed = false;
+let motorcyclePivot;
 
 // Variables pour la caméra
 let cameraDistance = 5;
@@ -170,9 +177,10 @@ function init() {
     loadMotorcycle();
 
     // Initialiser les sons de la moto
-    accelerationSound = new Audio('acceleration.MP3');
-    rollingSound = new Audio('rienpourlinstantcarlesonroulerestdegeu');
+    accelerationSound = new Audio('remplacerparlebon');
+    rollingSound = new Audio('motorcycle_rolling.mp3');
     rollingSound.loop = true;
+    rollingSound.volume = 0.5; // Réduire le volume pour un meilleur mixage
     
     // Ajouter l'événement pour détecter la fin du son d'accélération
     accelerationSound.addEventListener('ended', () => {
@@ -759,6 +767,14 @@ function handleKeys() {
         }
         keys['r'] = false;
     }
+    // Gérer la touche Shift pour le wheelie
+    if (keys['shift']) {
+        if (isOnMotorcycle && motorcycleSpeed >= minWheelieSpeed) {
+            isWheelieKeyPressed = true;
+        }
+    } else {
+        isWheelieKeyPressed = false;
+    }
 }
 
 // Gestion de la molette de la souris
@@ -972,10 +988,18 @@ function loadMotorcycle() {
             console.log('Moto chargée avec succès');
             motorcycle = gltf.scene;
             motorcycle.scale.set(1, 1, 1);
-            motorcycle.position.set(5, 0, 5);
-            motorcycle.rotation.y = Math.PI;
+            
+            // Créer un point de pivot pour le wheelie
+            motorcyclePivot = new THREE.Object3D();
+            motorcyclePivot.position.set(5, 0, 5);
+            motorcyclePivot.rotation.y = Math.PI; // Remis à Math.PI pour que la moto soit dans le bon sens
+            
+            // Ajuster la position de la moto par rapport au pivot
+            motorcycle.position.set(0, 0, 0);
             motorcycle.castShadow = true;
-            scene.add(motorcycle);
+            
+            motorcyclePivot.add(motorcycle);
+            scene.add(motorcyclePivot);
         },
         function (xhr) {
             console.log((xhr.loaded / xhr.total * 100) + '% chargé');
@@ -988,35 +1012,31 @@ function loadMotorcycle() {
 
 // Monter/Descendre de la moto
 function toggleMotorcycle() {
-    if (!motorcycle) return;
+    if (!motorcycle || !motorcyclePivot) return;
     
     if (!isOnMotorcycle) {
         // Monter sur la moto
-        const motorcyclePosition = motorcycle.position.clone();
+        const motorcyclePosition = motorcyclePivot.position.clone();
         player.position.copy(motorcyclePosition);
-        player.position.y += 0.5;
-        player.position.z += 0.2;
-        player.rotation.y = motorcycle.rotation.y;
-        player.rotation.x = -0.2;
+        player.rotation.y = motorcyclePivot.rotation.y;
+        player.rotation.x = 1.5;
         isOnMotorcycle = true;
         interactionBubble.classList.remove('visible');
 
         // Créer et jouer l'animation de position moto
         createMotorcycleAnimation();
-        if (motorcycleAnimation) {
-            motorcycleAnimation.play();
-        }
     } else {
         // Descendre de la moto
         const offset = new THREE.Vector3(2, 0, 0);
-        offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
-        player.position.copy(motorcycle.position).add(offset);
+        offset.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcyclePivot.rotation.y);
+        player.position.copy(motorcyclePivot.position).add(offset);
         player.rotation.x = 0;
         isOnMotorcycle = false;
         
         // Arrêter l'animation moto et revenir à l'animation idle
         if (motorcycleAnimation) {
             motorcycleAnimation.stop();
+            motorcycleAnimation.reset(); // Réinitialiser l'animation
         }
         if (idleAnimation) {
             idleAnimation.play();
@@ -1033,22 +1053,22 @@ function toggleMotorcycle() {
 function createMotorcycleAnimation() {
     if (!leftLeg || !rightLeg || !rightArm || !rightForearm) return;
 
-    const duration = 0.5; // Durée de l'animation en secondes
+    const duration = 0.5;
     const tracks = [];
 
-    // Animation pour la jambe gauche (plier)
+    // Animation pour la jambe gauche (plier pour s'asseoir)
     const leftLegTrack = new THREE.KeyframeTrack(
         leftLeg.uuid + '.rotation[x]',
         [0, duration],
-        [0, Math.PI/2] // Plier la jambe à 90 degrés
+        [0, Math.PI/1.2] // Plier la jambe à environ 150 degrés
     );
     tracks.push(leftLegTrack);
 
-    // Animation pour la jambe droite (plier)
+    // Animation pour la jambe droite (plier pour s'asseoir)
     const rightLegTrack = new THREE.KeyframeTrack(
         rightLeg.uuid + '.rotation[x]',
         [0, duration],
-        [0, Math.PI/2] // Plier la jambe à 90 degrés
+        [0, Math.PI/1.2] // Plier la jambe à environ 150 degrés
     );
     tracks.push(rightLegTrack);
 
@@ -1056,7 +1076,7 @@ function createMotorcycleAnimation() {
     const rightArmTrack = new THREE.KeyframeTrack(
         rightArm.uuid + '.rotation[x]',
         [0, duration],
-        [0, -Math.PI/4] // Baisser le bras
+        [0, -Math.PI/2.5] // Baisser le bras pour tenir le guidon
     );
     tracks.push(rightArmTrack);
 
@@ -1064,19 +1084,29 @@ function createMotorcycleAnimation() {
     const rightForearmTrack = new THREE.KeyframeTrack(
         rightForearm.uuid + '.rotation[x]',
         [0, duration],
-        [0, -Math.PI/3] // Plier l'avant-bras
+        [0, -Math.PI/3] // Plier l'avant-bras pour tenir le guidon
     );
     tracks.push(rightForearmTrack);
+
+    // Animation pour le torse (se pencher en avant)
+    const spineTrack = new THREE.KeyframeTrack(
+        'spine.rotation[x]',
+        [0, duration],
+        [0, -Math.PI/4] // Se pencher plus en avant
+    );
+    tracks.push(spineTrack);
 
     const clip = new THREE.AnimationClip('motorcycle', duration, tracks);
     motorcycleAnimation = mixer.clipAction(clip);
     motorcycleAnimation.setLoop(THREE.LoopOnce);
     motorcycleAnimation.clampWhenFinished = true;
+    motorcycleAnimation.setEffectiveWeight(1); // Assure que l'animation a un poids total
+    motorcycleAnimation.play();
 }
 
 // Gestion des mouvements de la moto
 function handleMotorcycleMovement() {
-    if (!isOnMotorcycle || !motorcycle) return;
+    if (!isOnMotorcycle || !motorcycle || !motorcyclePivot) return;
 
     const currentTime = Date.now();
     const isFirstAcceleration = currentTime - lastAccelerationTime > ACCELERATION_COOLDOWN;
@@ -1084,11 +1114,11 @@ function handleMotorcycleMovement() {
     if (keys['z'] || keys['arrowup']) {
         // Avancer
         const direction = new THREE.Vector3(0, 0, 1);
-        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
-        motorcycle.position.add(direction.multiplyScalar(motorcycleSpeed));
-        player.position.copy(motorcycle.position);
-        player.position.y += 0.5;
-        player.position.z += 0.2;
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcyclePivot.rotation.y);
+        motorcyclePivot.position.add(direction.multiplyScalar(motorcycleSpeed));
+        player.position.copy(motorcyclePivot.position);
+        player.position.y += 0.15; // Ajusté pour correspondre à la nouvelle hauteur
+        player.position.z += 0.1;
         player.rotation.x = -0.2;
 
         // Gestion des sons
@@ -1113,24 +1143,26 @@ function handleMotorcycleMovement() {
     if (keys['s'] || keys['arrowdown']) {
         // Reculer
         const direction = new THREE.Vector3(0, 0, -1);
-        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcycle.rotation.y);
-        motorcycle.position.add(direction.multiplyScalar(motorcycleSpeed));
-        player.position.copy(motorcycle.position);
-        // Maintenir la position assise pendant le mouvement
-        player.position.y += 0.5;
-        player.position.z += 0.2;
+        direction.applyAxisAngle(new THREE.Vector3(0, 1, 0), motorcyclePivot.rotation.y);
+        motorcyclePivot.position.add(direction.multiplyScalar(motorcycleSpeed));
+        player.position.copy(motorcyclePivot.position);
+        player.position.y += 0.15; // Ajusté pour correspondre à la nouvelle hauteur
+        player.position.z += 0.1;
         player.rotation.x = -0.2;
     }
     if (keys['q'] || keys['arrowleft']) {
         // Tourner à gauche
-        motorcycle.rotation.y += motorcycleRotationSpeed;
-        player.rotation.y = motorcycle.rotation.y;
+        motorcyclePivot.rotation.y += motorcycleRotationSpeed;
+        player.rotation.y = motorcyclePivot.rotation.y;
     }
     if (keys['d'] || keys['arrowright']) {
         // Tourner à droite
-        motorcycle.rotation.y -= motorcycleRotationSpeed;
-        player.rotation.y = motorcycle.rotation.y;
+        motorcyclePivot.rotation.y -= motorcycleRotationSpeed;
+        player.rotation.y = motorcyclePivot.rotation.y;
     }
+
+    // Gérer le wheelie
+    handleWheelie();
 }
 
 // Vérifier la proximité avec la moto
@@ -1153,6 +1185,63 @@ function checkMotorcycleProximity() {
     }
 }
 
+// Fonction pour gérer le wheelie
+function handleWheelie() {
+    if (!motorcycle || !motorcyclePivot) return;
+
+    // Calculer l'angle actuel de la moto
+    const currentAngle = motorcycle.rotation.x;
+    // Obtenir la direction du joueur et la normaliser entre -PI et PI
+    let playerDirection = player.rotation.y;
+    playerDirection = playerDirection % (2 * Math.PI);
+    if (playerDirection > Math.PI) playerDirection -= 2 * Math.PI;
+    if (playerDirection < -Math.PI) playerDirection += 2 * Math.PI;
+    
+    if (isWheelieKeyPressed) {
+        // Si on appuie sur shift, on continue à lever la roue avant
+        if (currentAngle > -wheelieMaxAngle) {
+            motorcycle.rotation.x -= wheelieSpeed;
+            // Position fixe du joueur sur la moto
+            player.position.copy(motorcyclePivot.position);
+            player.position.y += 0.15;
+            
+            // Adapter la rotation selon la direction du joueur
+            console.log("direction joueur normalisée :", playerDirection);
+            if (Math.abs(playerDirection) < Math.PI/2) {
+                // Le joueur regarde vers l'avant
+                player.rotation.x = -0.3 + currentAngle;
+            } else {
+                // Le joueur regarde vers l'arrière
+                player.rotation.x = -0.3 + currentAngle * -1;
+            }
+        }
+    } else if (currentAngle < 0) {
+        // Redescendre progressivement quand la touche est relâchée
+        motorcycle.rotation.x += wheelieRecoverySpeed;
+        // Position fixe du joueur sur la moto
+        player.position.copy(motorcyclePivot.position);
+        player.position.y += 0.15;
+        
+        // Adapter la rotation selon la direction du joueur
+        if (Math.abs(playerDirection) < Math.PI/2) {
+            // Le joueur regarde vers l'avant
+            player.rotation.x = -0.3 + motorcycle.rotation.x;
+        } else {
+            // Le joueur regarde vers l'arrière
+            player.rotation.x = -0.3 + motorcycle.rotation.x * -1;
+        }
+
+        // Vérifier si la moto est revenue à sa position normale
+        if (motorcycle.rotation.x >= 0) {
+            motorcycle.rotation.x = 0;
+            player.rotation.x = -0.3;
+            isWheelie = false;
+            // Restaurer la vitesse normale
+            motorcycleSpeed = 0.2;
+        }
+    }
+}
+
 // Boucle d'animation
 function animate() {
     requestAnimationFrame(animate);
@@ -1166,7 +1255,7 @@ function animate() {
     updateCamera();
     updateSmoke();
     updateRingSmoke();
-    checkMotorcycleProximity(); // Vérifier la proximité avec la moto
+    checkMotorcycleProximity();
     
     renderer.render(scene, camera);
 }

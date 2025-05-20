@@ -267,12 +267,18 @@ function handleMovement() {
 
         // Démarrer l'animation de marche
         if (walkAnimation && !walkAnimation.isRunning()) {
+            walkAnimation.reset();
             walkAnimation.play();
         }
     } else {
         // Arrêter l'animation de marche
         if (walkAnimation && walkAnimation.isRunning()) {
-            walkAnimation.stop();
+            walkAnimation.fadeOut(0.2); // Fade out doux
+            setTimeout(() => {
+                if (walkAnimation) {
+                    walkAnimation.stop();
+                }
+            }, 200);
         }
     }
 }
@@ -412,23 +418,42 @@ function createWalkAnimation() {
     // Animation pour la jambe gauche
     const leftLegTrack = new THREE.KeyframeTrack(
         leftLeg.uuid + '.rotation[x]',
-        [0, duration/2, duration],
-        [0, Math.PI/4, 0]
+        [0, duration/4, duration/2, 3*duration/4, duration],
+        [0, Math.PI/3, 0, -Math.PI/3, 0]
     );
     tracks.push(leftLegTrack);
 
-    // Animation pour la jambe droite
+    // Animation pour la jambe droite (décalée de 180 degrés par rapport à la gauche)
     const rightLegTrack = new THREE.KeyframeTrack(
         rightLeg.uuid + '.rotation[x]',
-        [0, duration/2, duration],
-        [Math.PI/4, 0, Math.PI/4]
+        [0, duration/4, duration/2, 3*duration/4, duration],
+        [Math.PI/3, 0, -Math.PI/3, 0, Math.PI/3]
     );
     tracks.push(rightLegTrack);
+
+    // Animation pour le balancement des bras
+    if (rightArm && rightForearm) {
+        // Bras droit
+        const rightArmTrack = new THREE.KeyframeTrack(
+            rightArm.uuid + '.rotation[x]',
+            [0, duration/2, duration],
+            [0, Math.PI/6, 0]
+        );
+        tracks.push(rightArmTrack);
+
+        // Avant-bras droit
+        const rightForearmTrack = new THREE.KeyframeTrack(
+            rightForearm.uuid + '.rotation[x]',
+            [0, duration/2, duration],
+            [0, -Math.PI/8, 0]
+        );
+        tracks.push(rightForearmTrack);
+    }
 
     const clip = new THREE.AnimationClip('walk', duration, tracks);
     walkAnimation = mixer.clipAction(clip);
     walkAnimation.setLoop(THREE.LoopRepeat);
-    walkAnimation.setEffectiveTimeScale(2); // Vitesse de l'animation
+    walkAnimation.setEffectiveTimeScale(1.5); // Vitesse de l'animation
 }
 
 // Chargement du modèle 3D
